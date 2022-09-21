@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:async' as asyn;
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(const MyApp());
@@ -16,22 +20,52 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: const Scaffold(
-        body: FormContainer(),
+        body: Form(),
       ),
     );
   }
 }
 
-class FormContainer extends StatelessWidget {
-  const FormContainer({Key? key}) : super(key: key);
+class Form extends StatefulWidget {
+  const Form({Key? key}) : super(key: key);
 
+  @override
+  State<Form> createState() => _FormState();
+}
+
+class _FormState extends State<Form> {
+  final TextEditingController _titleTextFieldController = TextEditingController();
+  final TextEditingController _abstractTextFieldController = TextEditingController();
+  asyn.Future<Keyphrases>? _futureKeyphrases;
+
+  final List<String> _apiUrls = <String>[
+    "YAKE",
+    "TextRank",
+    "http://127.0.0.1:5000",
+    "TopicRank"
+  ];
+  
+  String _apiUrl = "http://127.0.0.1:5000";
+  String _title = "";
+  String _abstract = "";
+
+  void _onRadioSelected(KeyphraseExtractionMethod? methods) {
+    if (methods != null) {
+      setState(() {
+        _apiUrl = _apiUrls.elementAt(methods.index);
+      });
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black,
+      decoration: BoxDecoration(
+          border: Border.all(color: Colors.black),
+          borderRadius: const BorderRadius.all(Radius.circular(10))
+      ),
       margin: const EdgeInsets.all(32),
       child: Container(
-        color: Colors.red,
         margin: const EdgeInsets.all(16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -42,108 +76,144 @@ class FormContainer extends StatelessWidget {
                   alignment: Alignment.center,
                   height: double.infinity,
                   margin: const EdgeInsets.symmetric(),
-                  color: Colors.green,
                   child: Container(
-                    alignment: Alignment.center,
-                    color: Colors.pink,
-                    margin: const EdgeInsets.all(16),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                            child: const TextField(
-                              decoration: InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  hintText: 'Input Judul'
+                      alignment: Alignment.center,
+                      margin: const EdgeInsets.all(16),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              child: TextField(
+                                controller: _titleTextFieldController,
+                                onChanged: (String newValue) {
+                                  setState(() {
+                                    _title = newValue;
+                                  });
+                                },
+                                decoration: const InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    hintText: 'Input Judul'
+                                ),
                               ),
                             ),
-                          ),
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 16),
-                            child: const TextField(
-                              decoration: InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  hintText: 'Input Abstract'
-                              ),
-                              minLines: 16,
-                              maxLines: 16,
-                            ),
-                          ),
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                            child: const TextField(
-                              decoration: InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  hintText: 'Input Gold Keyphrase'
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 16),
+                              child: TextField(
+                                controller: _abstractTextFieldController,
+                                onChanged: (String newValue) {
+                                  setState(() {
+                                    _abstract = newValue;
+                                  });
+                                },
+                                decoration: const InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    hintText: 'Input Abstract'
+                                ),
+                                minLines: 16,
+                                maxLines: 16,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    )
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              child: const TextField(
+                                decoration: InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    hintText: 'Input Gold Keyphrase'
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
                   ),
                 )
             ),
             Expanded(
                 flex: 2,
                 child: Container(
-                  alignment: Alignment.center,
-                  height: double.infinity,
-                  margin: const EdgeInsets.symmetric(),
-                  color: Colors.white,
-                  child: Column(
-                    children: [
-                      Container(
-                        alignment: Alignment.center,
-                        margin: const EdgeInsets.only(top: 32),
-                        child: const Text(
-                          "Select Method",
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold
+                    alignment: Alignment.center,
+                    height: double.infinity,
+                    margin: const EdgeInsets.symmetric(),
+                    child: Column(
+                      children: [
+                        Container(
+                          alignment: Alignment.center,
+                          margin: const EdgeInsets.only(top: 32),
+                          child: const Text(
+                            "Select Method",
+                            style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold
+                            ),
                           ),
                         ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                        child: const MethodRadio(),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.symmetric(vertical: 16),
-                        alignment: Alignment.center,
-                        child: ElevatedButton(
-                          onPressed: () {  },
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(88, 50)
-                          ),
-                          child: const Text("Generate Keyphrase"),
-                        ),
-                      ),
-                      Container(
-                        alignment: Alignment.center,
-                        margin: const EdgeInsets.only(top: 32),
-                        child: const Text(
-                          "Result : ",
-                          style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold
+                        Container(
+                          margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                          child: MethodSelection(
+                            onMethodSelect: _onRadioSelected,
                           ),
                         ),
-                      ),
-                      Container(
-                        alignment: Alignment.center,
-                        margin: const EdgeInsets.only(top: 32),
-                        child: const Text(
-                          "Hasil 1, Hasil 2, Hasil 3, Hasil 4, Hasil 5",
-                          style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold
+                        Container(
+                          margin: const EdgeInsets.symmetric(vertical: 16),
+                          alignment: Alignment.center,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(88, 50)
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _futureKeyphrases = createListKeyphrase(_apiUrl, _title, _abstract);
+                              });
+                            },
+                            child: const Text("Generate Keyphrase"),
                           ),
                         ),
-                      ),
-                    ],
-                  )
+                        Container(
+                          alignment: Alignment.center,
+                          margin: const EdgeInsets.only(top: 32),
+                          child: const Text(
+                            "Result : ",
+                            style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold
+                            ),
+                          ),
+                        ),
+                        Container(
+                          alignment: Alignment.center,
+                          margin: const EdgeInsets.only(top: 32),
+                          child: (_futureKeyphrases == null) ?
+                          const Text(
+                            "No Result",
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold
+                            ),
+                          ) : FutureBuilder<Keyphrases>(
+                              future: _futureKeyphrases,
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData) {
+                                  return Center(
+                                    child: Text(
+                                        "${snapshot.data!.keyphrases}",
+                                      style: const TextStyle(
+                                        fontSize: 18
+                                      ),
+                                    ),
+                                  );
+                                } else if (snapshot.hasError){
+                                  return Center(
+                                    child: Text("${snapshot.error}"),
+                                  );
+                                } else {
+                                  return const CircularProgressIndicator();
+                                }
+                              }
+                          )
+                        ),
+                      ],
+                    )
                 )
             ),
           ],
@@ -153,14 +223,17 @@ class FormContainer extends StatelessWidget {
   }
 }
 
-class MethodRadio extends StatefulWidget {
-  const MethodRadio({Key? key}) : super(key: key);
+enum KeyphraseExtractionMethod { yake, textRank, positionRank, topicRank }
+
+class MethodSelection extends StatefulWidget {
+  const MethodSelection({Key? key, required this.onMethodSelect}) : super(key: key);
+  final void Function(KeyphraseExtractionMethod?) onMethodSelect;
 
   @override
-  State<MethodRadio> createState() => _MethodRadioState();
+  State<MethodSelection> createState() => _MethodSelectionState();
 }
 
-class _MethodRadioState extends State<MethodRadio> {
+class _MethodSelectionState extends State<MethodSelection> {
   KeyphraseExtractionMethod? _keyphraseExtractionMethod = KeyphraseExtractionMethod.positionRank;
 
   @override
@@ -176,26 +249,32 @@ class _MethodRadioState extends State<MethodRadio> {
                 leading: Radio<KeyphraseExtractionMethod>(
                   value: KeyphraseExtractionMethod.yake,
                   groupValue: _keyphraseExtractionMethod,
-                  onChanged: (KeyphraseExtractionMethod? value) {
-                    setState(() {
-                      _keyphraseExtractionMethod = value;
-                    });
-                  },
+                  onChanged: (KeyphraseExtractionMethod? method) {
+                    widget.onMethodSelect(method);
+                    if (method != null) {
+                      setState(() {
+                        _keyphraseExtractionMethod = method;
+                      });
+                    }
+                  }
                 ),
               ),
               ListTile(
                 title: const Text(
-                    'TextRank',
+                  'TextRank',
                   softWrap: false,
                 ),
                 leading: Radio<KeyphraseExtractionMethod>(
                   value: KeyphraseExtractionMethod.textRank,
                   groupValue: _keyphraseExtractionMethod,
-                  onChanged: (KeyphraseExtractionMethod? value) {
-                    setState(() {
-                      _keyphraseExtractionMethod = value;
-                    });
-                  },
+                  onChanged: (KeyphraseExtractionMethod? method) {
+                    widget.onMethodSelect(method);
+                    if (method != null) {
+                      setState(() {
+                        _keyphraseExtractionMethod = method;
+                      });
+                    }
+                  }
                 ),
               ),
             ],
@@ -210,11 +289,14 @@ class _MethodRadioState extends State<MethodRadio> {
                 leading: Radio<KeyphraseExtractionMethod>(
                   value: KeyphraseExtractionMethod.positionRank,
                   groupValue: _keyphraseExtractionMethod,
-                  onChanged: (KeyphraseExtractionMethod? value) {
-                    setState(() {
-                      _keyphraseExtractionMethod = value;
-                    });
-                  },
+                  onChanged: (KeyphraseExtractionMethod? method) {
+                    widget.onMethodSelect(method);
+                    if (method != null) {
+                      setState(() {
+                        _keyphraseExtractionMethod = method;
+                      });
+                    }
+                  }
                 ),
               ),
               ListTile(
@@ -222,11 +304,14 @@ class _MethodRadioState extends State<MethodRadio> {
                 leading: Radio<KeyphraseExtractionMethod>(
                   value: KeyphraseExtractionMethod.topicRank,
                   groupValue: _keyphraseExtractionMethod,
-                  onChanged: (KeyphraseExtractionMethod? value) {
-                    setState(() {
-                      _keyphraseExtractionMethod = value;
-                    });
-                  },
+                  onChanged: (KeyphraseExtractionMethod? method) {
+                    widget.onMethodSelect(method);
+                    if (method != null) {
+                      setState(() {
+                        _keyphraseExtractionMethod = method;
+                      });
+                    }
+                  }
                 ),
               ),
             ],
@@ -237,4 +322,35 @@ class _MethodRadioState extends State<MethodRadio> {
   }
 }
 
-enum KeyphraseExtractionMethod { yake, textRank, positionRank, topicRank }
+asyn.Future<Keyphrases> createListKeyphrase(String url, String title, String abstract) async {
+  final response = await http.post(
+      Uri.parse(url),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: jsonEncode(<String, String>{
+        'title': title,
+        'abstract': abstract
+      })
+  );
+  if (response.statusCode == 200) {
+    debugPrint("test : ${jsonDecode(response.body)}");
+    Keyphrases test2 = Keyphrases.fromJson(jsonDecode(response.body));
+    debugPrint("test 2 : ${test2.keyphrases.runtimeType}");
+    return Keyphrases.fromJson(jsonDecode(response.body));
+  } else {
+    debugPrint("gagal");
+    throw Exception('Failed to generate keyphrases');
+  }
+}
+
+class Keyphrases {
+  List<dynamic> keyphrases;
+
+  Keyphrases({required this.keyphrases});
+
+  factory Keyphrases.fromJson(Map<String, dynamic> json) {
+    return Keyphrases(keyphrases: json['keyphrases']);
+  }
+}
