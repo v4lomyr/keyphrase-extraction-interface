@@ -41,11 +41,11 @@ class _FormState extends State<Form> {
   final List<String> _apiUrls = <String>[
     "YAKE",
     "TextRank",
-    "http://127.0.0.1:5000",
+    "https://keyphrase-ext-postionrank.herokuapp.com/",
     "TopicRank"
   ];
   
-  String _apiUrl = "http://127.0.0.1:5000";
+  String _apiUrl = "https://keyphrase-ext-postionrank.herokuapp.com/";
   String _title = "";
   String _abstract = "";
 
